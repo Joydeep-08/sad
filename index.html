@@ -734,7 +734,7 @@
             <div class="success-badge">🎉 It’s official</div>
             <h3 class="success-title">The final proposal is now pure romance 💞</h3>
             <p class="success-text">No watermark, no editing controls, just the romantic experience with floating hearts, the cat GIF, and celebration.</p>
-            <img class="cat-gif" src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExbDAzcGRkY2o0N2t0MHF3YjVoZzQzZHhoYTltbzBwMGpxeXk5bXJrYyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/vFKqnCdLPNOKc/giphy.gif" alt="Cute celebratory cat GIF" loading="lazy" width="240" height="240" />
+            <img class="cat-gif" src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExd3NqZHJta2Nha202MDIzb3V2Y2xod2Q0amE0eGpqbGdmd2hhN25sayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/EzP85aNlqGXWo/giphy.gif" alt="Cute celebratory cat GIF" loading="lazy" width="240" height="240" />
           </div>
         </article>
       </section>
@@ -746,7 +746,8 @@
     const coupons = {
       LOVE50: 50,
       FIRST20: 20,
-      JOY: 1
+      JOY: 98,
+      FEIN:100
     };
 
     const state = {
@@ -925,25 +926,70 @@
     }
 
     function applyCoupon() {
-      const code = els.couponInput.value.trim().toUpperCase();
-      if (!code) {
+    const code = els.couponInput.value.trim().toUpperCase();
+
+    if (!code) {
         setCouponFeedback('Please enter a coupon code.', 'error');
         return;
-      }
-      if (state.appliedCoupon) {
-        setCouponFeedback(`Coupon ${state.appliedCoupon} is already applied. Multiple coupon stacking is disabled.`, 'error');
-        return;
-      }
-      if (!Object.prototype.hasOwnProperty.call(coupons, code)) {
-        setCouponFeedback('Invalid coupon code. Try LOVE50, FIRST20, or JOY30.', 'error');
-        return;
-      }
-      state.appliedCoupon = code;
-      state.discountPercent = coupons[code];
-      state.finalPrice = Math.max(1, Math.round(BASE_PRICE * (100 - state.discountPercent) / 100));
-      refreshPricing();
-      setCouponFeedback(`${code} applied successfully. You saved ${state.discountPercent}%.`, 'success');
     }
+
+    if (state.appliedCoupon) {
+        setCouponFeedback(
+            `Coupon ${state.appliedCoupon} is already applied. Multiple coupon stacking is disabled.`,
+            'error'
+        );
+        return;
+    }
+
+    // FEIN = Free Access
+    if (code === "FEIN") {
+        state.appliedCoupon = code;
+        state.discountPercent = 100;
+        state.finalPrice = 0;
+
+        refreshPricing();
+
+        setCouponFeedback(
+            'FEIN applied successfully. Free access unlocked 🎉',
+            'success'
+        );
+
+        return;
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(coupons, code)) {
+        setCouponFeedback(
+            'Invalid coupon code. Try LOVE50, FIRST20, JOY or FEIN.',
+            'error'
+        );
+        return;
+    }
+
+    state.appliedCoupon = code;
+    state.discountPercent = coupons[code];
+
+    state.finalPrice = Math.max(
+        1,
+        Math.round(BASE_PRICE * (100 - state.discountPercent) / 100)
+    );
+
+    refreshPricing();
+
+    if (code === "JOY") {
+        state.finalPrice = 1;
+        refreshPricing();
+
+        setCouponFeedback(
+            'JOY applied successfully. Price reduced to ₹1 🎉',
+            'success'
+        );
+    } else {
+        setCouponFeedback(
+            `${code} applied successfully. You saved ${state.discountPercent}%.`,
+            'success'
+        );
+    }
+}
 
     function setCouponFeedback(message, type) {
       els.couponFeedback.className = `coupon-feedback ${type}`;
@@ -1057,6 +1103,14 @@
     }
 
     function openRazorpayCheckout() {
+      if (state.finalPrice === 0) {
+
+    markPaymentSuccess({
+        razorpay_payment_id: "FREE_ACCESS"
+    });
+
+    return;
+}
       setPaymentFeedback('Opening Razorpay checkout...', 'info');
       if (!window.Razorpay) {
         setPaymentFeedback('Razorpay SDK failed to load. Do not fake success here. Check network/CSP and retry.', 'error');
